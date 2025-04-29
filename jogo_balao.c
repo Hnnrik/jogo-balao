@@ -17,10 +17,12 @@ typedef struct{
 #define MAXIMO_NUVENS 2
 float balaoX = -0.8f, balaoY = 0.3f;
 float nuvemX, nuvemY;
-float velocidadeNuvem = 0.01f;
+float velocidadeBaseNuvem = 0.01f;
 int quantidadeNuvens=0;
 nuvem nuvens[MAXIMO_NUVENS];
 bool colisao = false;
+int pontos = 0;
+
 
 void atualiza(int valor);
 void checaColisao();
@@ -31,28 +33,44 @@ void criaNuvem();
 
 void atualiza(int valor) {
     if (!colisao) {
-        for(int i = 0; i<MAXIMO_NUVENS;i++){
-            if(i!=0){
-                if(nuvens[i-1].nuvemX<0){
-                    nuvens[i].velocidadeNuvem=0.01;
+        for (int i = 0; i < MAXIMO_NUVENS; i++) {
+            if (nuvens[i].velocidadeNuvem == 0) {
+                if (nuvens[i-1].nuvemX < 0) {
+                    nuvens[i].velocidadeNuvem = 0.01f; // Velocidade inicial
                 }
             }
+
+            // Atualiza a posição da nuvem
             nuvens[i].nuvemX -= nuvens[i].velocidadeNuvem;
-            if (nuvens[i].nuvemX < -1.5f){
-                nuvens[i].nuvemX = 1.5f;
-                nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-                if(nuvens[i].nuvemY<0){
 
+            // Se a nuvem sair da tela
+            if (nuvens[i].nuvemX < -1.5f) {
+                nuvens[i].nuvemX = 1.5f + ((float)(rand() % 50) / 100.0f); // nasce entre 1.5 e 2.0
+                nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 2.0f - 1.0f; // Reposiciona a nuvem
+
+
+                pontos++; // Incrementa pontos ao passar a nuvem
+                printf("Pontos: %d\n", pontos);
+                if (pontos % 2==0) {
+                        velocidadeBaseNuvem += 0.05f; // Só aumenta a velocidade base
+                        if (velocidadeBaseNuvem > 0.05f) {
+                            velocidadeBaseNuvem = 0.05f;
+                        }
+                    for (int g=0;g<MAXIMO_NUVENS;g++){
+                                    nuvens[g].velocidadeNuvem = velocidadeBaseNuvem; // Aumento mais gradual na velocidade
+                 }
                 }
-            }
 
-            checaColisao();
+            }
         }
 
+        checaColisao(); // Checa colisões com o balão
     }
+
     glutPostRedisplay();
-    glutTimerFunc(16, atualiza, 0);
+    glutTimerFunc(16, atualiza, 0); // Chama a função de atualização de 16 em 16 milissegundos
 }
+
 
 void desenhaChaoDeNuvem() {
     glPushMatrix();
@@ -83,13 +101,18 @@ void desenhaChaoDeNuvem() {
 
 
 void checaColisao() {
-    for(int i=0;i<quantidadeNuvens;i++){
+    colisao = false;
+    for (int i = 0; i < MAXIMO_NUVENS; i++) {
         float dx = balaoX - nuvens[i].nuvemX;
         float dy = balaoY - nuvens[i].nuvemY;
         float distancia = sqrt(dx * dx + dy * dy);
-        colisao = distancia < 0.35f;
+        if (distancia < 0.35f) {
+            colisao = true;
+            break; // Não precisa continuar verificando se já colidiu
+        }
     }
 }
+
 
 void criaNuvem(){
         for(int i =0;i<MAXIMO_NUVENS;i++){
@@ -98,8 +121,7 @@ void criaNuvem(){
             nuvens[i].velocidadeNuvem=0.0;
             printf("Criou nuvem\n");
         }
-        nuvens[0].velocidadeNuvem=0.01f;
-        quantidadeNuvens++;
+        nuvens[0].velocidadeNuvem = velocidadeBaseNuvem; // Só a primeira começa andando
 }
 void desenhaNuvem() {
     for(int i=0;i<MAXIMO_NUVENS;i++){
@@ -149,6 +171,25 @@ void desenhaBalaoManual() {
 
     glPopMatrix();
 }
+void desenhaPontuacao() {
+    char texto[20];
+    sprintf(texto, "Pontos: %d", pontos);
+
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 600, 0, 600);
+    glColor3f(0.0f, 0.0f, 0.0f); // Cor preta para o texto
+    glRasterPos2i(10, 570); // Posição no canto superior esquerdo
+    for (char* c = texto; *c != '\0'; c++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -172,6 +213,7 @@ void display() {
     desenhaChaoDeNuvem();
     desenhaBalaoManual();
     desenhaNuvem();
+    desenhaPontuacao();
     glutSwapBuffers();
 }
 
