@@ -1,188 +1,199 @@
-    #include <GL/glut.h>
-    #include <math.h>
-    #include <stdlib.h>
-    #include <stdbool.h>
-    #include <stdio.h>
-    #include <string.h>
-    #include <time.h>
-    #include <windows.h>
+#include <GL/glut.h>
+#include <math.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <windows.h>
+#include <locale.h>
 
-    typedef struct{
-        float nuvemX;
-        float nuvemY;
-        float velocidadeNuvem;
+typedef struct
+{
+    float nuvemX;
+    float nuvemY;
+    float velocidadeNuvem;
 
-    } nuvem;
+} nuvem;
 
-    #define MAXIMO_NUVENS 2
-    float balaoX = -0.8f, balaoY = 0.3f;
-    float nuvemX, nuvemY;
-    float velocidadeNuvem = 0.01f;
-    int quantidadeNuvens=0;
-    nuvem nuvens[MAXIMO_NUVENS];
-    bool colisao = false;
+#define MAXIMO_NUVENS 2
+float balaoX = -0.8, balaoY = 0.3;
+float nuvemX, nuvemY;
+float velocidadeBaseNuvem = 0.01;
+int quantidadeNuvens = 0;
+nuvem nuvens[MAXIMO_NUVENS];
+bool colisao = false;
+int pontos = 0;
+bool jogando = false;
 
-    void atualiza(int valor);
-    void checaColisao();
-    void desenhaBalaoManual();
-    void display();
-    void desenhaNuvem();
-    void criaNuvem();
+void atualiza(int valor);
+void checaColisao();
+void desenhaBalaoManual();
+void display();
+void desenhaNuvem();
+void criaNuvem();
 
-    void atualiza(int valor) {
-        if (!colisao) {
-            for(int i = 0; i<MAXIMO_NUVENS;i++){
-                if(i!=0){
-                    if(nuvens[i-1].nuvemX<0){
-                        nuvens[i].velocidadeNuvem=0.01;
-                    }
-                }
-                nuvens[i].nuvemX -= nuvens[i].velocidadeNuvem;
-                if (nuvens[i].nuvemX < -1.5f){
-                    nuvens[i].nuvemX = 1.5f;
-                    nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 1.6f - 0.8f;
 
-                }
-                checaColisao();
+
+void reseta(){
+    if(colisao){
+        colisao=false;
+        balaoX=-0.8;
+        balaoY = 0.3;
+        pontos=0;
+        velocidadeBaseNuvem=0.01;
+        for(int i = 0; i<MAXIMO_NUVENS;i++){
+            nuvens[i].nuvemX=1.5;
+            nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 1.6 - 0.8;
+            if(i==0){
+                nuvens[i].velocidadeNuvem=velocidadeBaseNuvem;
+                continue;
             }
-
-        }
-        glutPostRedisplay();
-        glutTimerFunc(16, atualiza, 0);
-    }
-
-    void desenhaChaoDeNuvem2() {
-        glPushMatrix();
-        glColor3f(0.8f, 0.8f, 0.8f); // Cor da nuvem
-
-        glTranslatef(0.0f, -1.25f, 0.0f); // Z = 0.0f (posição base)
-        glutSolidSphere(0.4f, 20, 20);
-
-        glTranslatef(0.3f, 0.1f, 0.2f); // Z = 0.2f (mais perto)
-        glutSolidSphere(0.3f, 20, 20);
-
-        glTranslatef(-0.5f, 0.0f, -0.1f); // Z = -0.1f (mais longe que a base)
-        glutSolidSphere(0.35f, 20, 20);
-
-        glTranslatef(0.0f, -0.2f, 0.3f); // Z = 0.3f (ainda mais perto)
-        glutSolidSphere(0.28f, 20, 20);
-
-        glTranslatef(-0.4f, -0.1f, -0.2f); // Z = -0.2f (mais longe)
-        glutSolidSphere(0.32f, 20, 20);
-
-        glTranslatef(0.3f, 0.1f, 0.2f); // Z = 0.2f (mais perto)
-        glutSolidSphere(0.25f, 20, 20);
-
-
-
-        glPopMatrix();
-    }
-
-
-    void desenhaChaoDeNuvem() {
-
-        for(int i = 0; i<6;i++){
-            glPushMatrix();
-            glColor3f(0.8f, 0.8f, 0.8f); // Cor da nuvem
-
-            switch (i){
-                case 0: glTranslatef(-0.9, -1.4, 0.0); break;
-                case 1: glTranslatef(0.0, -1.45, 0.0); break;
-                case 2: glTranslatef(0.7, -1.35, 0.0); break;
-                case 3: glTranslatef(-0.5, -1.4, -0.1); break;
-                case 4: glTranslatef(0.3, -1.45, -0.1); break;
-                case 5: glTranslatef(1.0, -1.45, -0.1); break;
-
-            }
-
-            glutSolidSphere(0.4f, 20, 20);
-
-            glTranslatef(0.3f, 0.1f, 0.2f); // Z = 0.2f (mais perto)
-            glutSolidSphere(0.3f, 20, 20);
-
-            glTranslatef(-0.5f, 0.0f, -0.1f); // Z = -0.1f (mais longe que a base)
-            glutSolidSphere(0.35f, 20, 20);
-
-            glTranslatef(0.0f, -0.2f, 0.3f); // Z = 0.3f (ainda mais perto)
-            glutSolidSphere(0.28f, 20, 20);
-
-            glTranslatef(-0.4f, -0.1f, -0.2f); // Z = -0.2f (mais longe)
-            glutSolidSphere(0.32f, 20, 20);
-
-            glTranslatef(0.3f, 0.1f, 0.2f); // Z = 0.2f (mais perto)
-            glutSolidSphere(0.25f, 20, 20);
-            glPopMatrix();
-        }
-
-    }
-
-    void checaColisao() {
-        for(int i=0;i<quantidadeNuvens;i++){
-            float dx = balaoX - nuvens[i].nuvemX;
-            float dy = balaoY - nuvens[i].nuvemY;
-            float distancia = sqrt(dx * dx + dy * dy);
-            colisao = distancia < 0.35f;
+            nuvens[i].velocidadeNuvem=0;
         }
     }
-
-    void criaNuvem(){
-            for(int i =0;i<MAXIMO_NUVENS;i++){
-                nuvens[i].nuvemX = 1.5f;
-                nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-                nuvens[i].velocidadeNuvem=0.0;
-                printf("Criou nuvem\n");
-            }
-            nuvens[0].velocidadeNuvem=0.01f;
-            quantidadeNuvens++;
-    }
-    void desenhaNuvem() {
-        for(int i=0;i<MAXIMO_NUVENS;i++){
-            printf("andou\n");
-            glPushMatrix();
-            glTranslatef(nuvens[i].nuvemX, nuvens[i].nuvemY, 0.0f);
-            glColor3f(1.0f, 1.0f, 1.0f);
-            glutSolidSphere(0.15, 20, 20);
-            glTranslatef(-0.1f, 0.05f, 0.0f);
-            glutSolidSphere(0.12, 20, 20);
-            glTranslatef(0.2f, 0.0f, 0.0f);
-            glutSolidSphere(0.13, 20, 20);
-            glPopMatrix();
-        }
-    }
-
-void desenhaSombraBalao() {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glPushMatrix();
-    glDisable(GL_LIGHTING); // Sombra sem iluminação
-    glColor4f(0.0f, 0.0f, 0.0f, 0.4f); // Cor preta semi-transparente
-
-
-    glTranslatef(balaoX, -0.95f, 0.4f); // y bem perto do chão de nuvens
-    glScalef(1.0f, 0.1f, 1.0f); // Achatar no eixo Y
-    glutSolidSphere(0.2, 20, 20); // Mesmo tamanho do balão
-
-    glEnable(GL_LIGHTING);
-    glPopMatrix();
-
-    glDisable(GL_BLEND);
-
 }
 
-void desenhaSombraNuvens() {
+void atualiza(int valor){
+    if (!colisao){
+        for (int i = 0; i < MAXIMO_NUVENS; i++){
+            if (nuvens[i].velocidadeNuvem == 0){
+                if (nuvens[i - 1].nuvemX < 0 || nuvens[i + 1].nuvemX < 0){
+                    nuvens[i].velocidadeNuvem = velocidadeBaseNuvem;
+                }
+            }
+
+            nuvens[i].nuvemX -= nuvens[i].velocidadeNuvem;
+
+            if (nuvens[i].nuvemX < -1.5){
+                nuvens[i].nuvemX = 1.5 + ((float)(rand() % 50) / 100.0); // nasce entre 1.5 e 2.0
+                nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 1.6 - 0.8;
+
+                pontos++;
+                printf("Pontos: %d\n", pontos);
+                if (pontos % 10  == 0){
+                    velocidadeBaseNuvem += 0.005;
+                }
+                nuvens[i].velocidadeNuvem=0;
+            }
+        }
+        checaColisao();
+    }
+    glutPostRedisplay();
+    glutTimerFunc(16, atualiza, 0);
+}
+
+void desenhaChaoDeNuvem(){
+    float kd[4];
+    float ks[4];
+    float ns;
+    glPushAttrib(GL_LIGHTING_BIT);  // Salva o estado atual de material/luz
+
+    kd[0] = 1.0; kd[1] = 1.0; kd[2] = 1.0; kd[3] = 1.0;
+    ks[0] = 0.0; ks[1] = 0.0; ks[2] = 0.0; ks[3] = 1.0;
+    ns = 128.0;
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, kd);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, ks);
+    glMaterialf(GL_FRONT, GL_SHININESS, ns);
+
+    for (int i = 0; i < 6; i++)
+    {
+        glPushMatrix();
+        glColor3f(0.8, 0.8, 0.8); // Cor da nuvem
+
+        switch (i)
+        {
+        case 0:
+            glTranslatef(-0.9, -1.4, 0.0);
+            break;
+        case 1:
+            glTranslatef(0.0, -1.45, 0.0);
+            break;
+        case 2:
+            glTranslatef(0.7, -1.35, 0.0);
+            break;
+        case 3:
+            glTranslatef(-0.5, -1.4, -0.1);
+            break;
+        case 4:
+            glTranslatef(0.3, -1.45, -0.1);
+            break;
+        case 5:
+            glTranslatef(1.0, -1.45, -0.1);
+            break;
+        }
+
+        glutSolidSphere(0.4, 20, 20);
+
+        glTranslatef(0.3, 0.1, 0.2);
+        glutSolidSphere(0.3, 20, 20);
+
+        glTranslatef(-0.5, 0.0, -0.1);
+        glutSolidSphere(0.35, 20, 20);
+
+        glTranslatef(0.0, -0.2, 0.3);
+        glutSolidSphere(0.28, 20, 20);
+
+        glTranslatef(-0.4, -0.1, -0.2);
+        glutSolidSphere(0.32, 20, 20);
+
+        glTranslatef(0.3, 0.1, 0.2);
+        glutSolidSphere(0.25f, 20, 20);
+        glPopMatrix();
+    }
+    glPopAttrib();
+}
+
+void checaColisao(){
+    colisao = false;
+    for (int i = 0; i < MAXIMO_NUVENS; i++){
+        float dx = balaoX - nuvens[i].nuvemX;
+        float dy = balaoY - nuvens[i].nuvemY;
+        float distancia = sqrt(dx * dx + dy * dy);
+        if (distancia < 0.30){
+            colisao = true;
+            break;
+        }
+    }
+}
+
+void desenhaSombraBalao()
+{
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glPushMatrix();
     glDisable(GL_LIGHTING);
-    glColor4f(0.0f, 0.0f, 0.0f, 0.4f); // Mais transparente para as nuvens
+    glColor4f(0.0, 0.0, 0.0, 0.4);
 
-    for (int i = 0; i < MAXIMO_NUVENS; i++) {
+    glTranslatef(balaoX, -0.95, 0.4);
+    glScalef(1.0 + balaoY/2, 0.1, 1.0);
+    glutSolidSphere(0.2, 20, 20);
+
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
+
+    glDisable(GL_BLEND);
+}
+
+
+
+void desenhaSombraNuvens()
+{
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPushMatrix();
+    glDisable(GL_LIGHTING);
+    glColor4f(0.0, 0.0, 0.0, 0.4);
+
+    for (int i = 0; i < MAXIMO_NUVENS; i++)
+    {
         glPushMatrix();
-        glTranslatef(nuvens[i].nuvemX, -0.95f, 0.4f);
-        glScalef(1.0f, 0.1f, 1.0f); // Achatar também
-        glutSolidSphere(0.15, 20, 20); // Tamanho parecido com a nuvem principal
+        glTranslatef(nuvens[i].nuvemX, -0.95, 0.4);
+        glScalef(1.0 + nuvens[i].nuvemY/2, 0.1, 1.0);
+        glutSolidSphere(0.15, 20, 20);
         glPopMatrix();
     }
 
@@ -191,102 +202,255 @@ void desenhaSombraNuvens() {
     glDisable(GL_BLEND);
 }
 
-    void desenhaBalaoManual() {
+void criaNuvem(){
+    for (int i = 0; i < MAXIMO_NUVENS; i++){
+        nuvens[i].nuvemX = 1.5;
+        nuvens[i].nuvemY = ((float)rand() / RAND_MAX) * 2.0 - 1.0;
+        nuvens[i].velocidadeNuvem = 0.0;
+        printf("Criou nuvem\n");
+    }
+}
+
+void desenhaNuvem(){
+    float kd[4];
+    float ks[4];
+    float ns;
+    glPushAttrib(GL_LIGHTING_BIT);  // Salva o estado atual de material/luz
+
+    kd[0] = 1.0; kd[1] = 1.0; kd[2] = 1.0; kd[3] = 1.0;
+    ks[0] = 0.0; ks[1] = 0.0; ks[2] = 0.0; ks[3] = 1.0;
+    ns = 128.0;
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, kd);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, ks);
+    glMaterialf(GL_FRONT, GL_SHININESS, ns);
+
+    for (int i = 0; i < MAXIMO_NUVENS; i++)
+    {
         glPushMatrix();
-        glTranslatef(balaoX, balaoY, 0.0f); // Posição do balão manual
-        glScalef(0.8f, 0.8f, 0.8f);
-
-        // Parte principal do balão (esfera)
-        glColor3f(0.9f, 0.2f, 0.2f); // Laranja
-        glutSolidSphere(0.2, 20, 20);
-
-        // Cordinhas (linhas finas)
-        glColor3f(0.6f, 0.3f, 0.0f); // Marrom
-        glBegin(GL_LINES);
-            glVertex3f( 0.05f, -0.2f,  0.05f);
-            glVertex3f( 0.02f, -0.3f,  0.02f);
-
-            glVertex3f(-0.05f, -0.2f,  0.05f);
-            glVertex3f(-0.02f, -0.3f,  0.02f);
-
-            glVertex3f( 0.05f, -0.2f, -0.05f);
-            glVertex3f( 0.02f, -0.3f, -0.02f);
-
-            glVertex3f(-0.05f, -0.2f, -0.05f);
-            glVertex3f(-0.02f, -0.3f, -0.02f);
-        glEnd();
-
-        // Cestinha (cubo pequeno)
-        glColor3f(0.4f, 0.2f, 0.0f); // Marrom escuro
-        glTranslatef(0.0f, -0.32f, 0.0f);
-        glutSolidCube(0.08);
-
+        glTranslatef(nuvens[i].nuvemX, nuvens[i].nuvemY, 0.0);
+        glColor3f(1.0, 1.0, 1.0);
+        glutSolidSphere(0.15, 20, 20);
+        glTranslatef(-0.1, 0.05, 0.0);
+        glutSolidSphere(0.12, 20, 20);
+        glTranslatef(0.2, 0.0, 0.0);
+        glutSolidSphere(0.13, 20, 20);
         glPopMatrix();
     }
+    glPopAttrib();
+}
 
-void display() {
+void desenhaBalaoManual()
+{
+    glPushMatrix();
+
+    float kd[4];
+    float ks[4];
+    float ns;
+
+    glTranslatef(balaoX, balaoY, 0.0);
+    glScalef(0.8, 0.8, 0.8);
+    glColor3f(1.0, 0.0, 0.0);
+
+    glPushAttrib(GL_LIGHTING_BIT);  // Salva o estado atual de material/luz
+
+    kd[0] = 1.0; kd[1] = 1.0; kd[2] = 1.0; kd[3] = 1.0;
+    ks[0] = 0.7; ks[1] = 0.7; ks[2] = 0.7; ks[3] = 1.0;
+    ns = 45.0;
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, kd);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, ks);
+    glMaterialf(GL_FRONT, GL_SHININESS, ns);
+
+
+    glutSolidSphere(0.2, 20, 20);
+
+    glPopAttrib();
+
+    glColor3f(0.6, 0.3, 0.0);
+    glBegin(GL_LINES);
+    glVertex3f(0.05, -0.2, 0.05);
+    glVertex3f(0.02, -0.3, 0.02);
+
+    glVertex3f(-0.05, -0.2, 0.05);
+    glVertex3f(-0.02, -0.3, 0.02);
+
+    glVertex3f(0.05, -0.2, -0.05);
+    glVertex3f(0.02, -0.3, -0.02);
+
+    glVertex3f(-0.05, -0.2, -0.05);
+    glVertex3f(-0.02, -0.3, -0.02);
+    glEnd();
+
+
+
+
+    glColor3f(0.4, 0.2, 0.0);
+    glTranslatef(0.0, -0.32, 0.0);
+    glutSolidCube(0.08);
+
+
+    glPopMatrix();
+}
+
+void desenhaMenu() {
+
+    if (colisao) {
+
+        char texto1[50];
+        char texto2[50];
+        sprintf(texto1, "Voce fez %d pontos.", pontos);
+        sprintf(texto2, "Pressione R para reiniciar.");
+
+        glPushMatrix();
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0, 600, 0, 600);
+
+        glColor3f(0.0f, 0.0f, 0.0f);
+
+        // Primeira linha
+        glRasterPos2i(200, 310);
+        for (char *c = texto1; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+        }
+
+        // Segunda linha
+        glRasterPos2i(200, 280);  // um pouco abaixo da primeira
+        for (char *c = texto2; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+        }
+
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+}
+
+
+void desenhaPontuacao(){
+    char texto[20];
+    sprintf(texto, "Pontos: %d", pontos);
+
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 600, 0, 600);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glRasterPos2i(10, 570);
+    for (char *c = texto; *c != '\0'; c++)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    GLfloat luzAmbiente[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, luzAmbiente);
-
-    GLfloat luzDifusa[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-    GLfloat luzEspecular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat posicaoLuz[] = { 1.0f, 1.0f, 1.0f, 0.0f };
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
-    glLightfv(GL_LIGHT0, GL_POSITION, posicaoLuz);
 
     desenhaChaoDeNuvem();
 
-    // <<< Adicione as sombras antes dos objetos
     desenhaSombraBalao();
     desenhaSombraNuvens();
 
     desenhaBalaoManual();
     desenhaNuvem();
+    desenhaPontuacao();
+
+    desenhaMenu();
 
     glutSwapBuffers();
 }
 
-    void tecladoEspecial(int tecla, int x, int y) {
-        switch (tecla) {
-            case GLUT_KEY_UP: balaoY += 0.05f; break;
-            case GLUT_KEY_DOWN: balaoY -= 0.05f; break;
-            case GLUT_KEY_LEFT: balaoX -= 0.05f; break;
-            case GLUT_KEY_RIGHT: balaoX += 0.05f; break;
+
+void teclado(int tecla, int x, int y){
+    if(tecla == 'r'){
+        reseta();
+    }
+}
+
+
+
+void tecladoEspecial(int tecla, int x, int y){
+    if(tecla == GLUT_KEY_UP || tecla == GLUT_KEY_DOWN || tecla == GLUT_KEY_LEFT|| tecla == GLUT_KEY_RIGHT){
+        jogando=true;
+        nuvens[0].velocidadeNuvem=velocidadeBaseNuvem;
+    }
+    if(jogando){
+        switch (tecla){
+        case GLUT_KEY_UP:
+            balaoY += balaoY < 1.1 ? 0.06 : 0.0;
+            break;
+        case GLUT_KEY_DOWN:
+            balaoY -= balaoY > -0.55 ? 0.06 : 0.0;
+            break;
+        case GLUT_KEY_LEFT:
+            balaoX -= balaoX > -1.1 ? 0.06 : 0.0;
+            break;
+        case GLUT_KEY_RIGHT:
+            balaoX += balaoX < 1.1 ? 0.06 : 0.0;
+            break;
         }
+        printf("O balÃ£o se moveu para (%.2f,%.2f)\n", balaoX, balaoY);
         glutPostRedisplay();
     }
 
-    void init() {
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        glEnable(GL_NORMALIZE);
-        glEnable(GL_COLOR_MATERIAL);
-        glClearColor(0.5f, 0.8f, 1.0f, 1.0f);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        gluPerspective(45.0, 1.0, 1.0, 10.0);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        criaNuvem();
-        gluLookAt(0.0, 0.0, 3.0,
-                  0.0, 0.0, 0.0,
-                  0.0, 1.0, 0.0); // direcionamento da camera; ponto onde tá olhando; posição?(em pé ou deutado)
-    }
+}
 
-    int main(int argc, char** argv) {
-        srand(time(NULL));
-        glutInit(&argc, argv);
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-        glutInitWindowSize(600, 600);
-        glutCreateWindow("Jogo do Balao - OpenGL");
-        init();
-        glutDisplayFunc(display);
-        glutSpecialFunc(tecladoEspecial);
-        glutTimerFunc(16, atualiza, 0);
-        glutMainLoop();
-        return 0;
-    }
+void luzes(){
+
+    float luzAmbiente[] = {0.2, 0.2, 0.2, 1.0};
+    float luzDifusa[] = {0.8, 0.8, 0.8, 1.0};
+    float luzEspecular[] = {1.0, 1.0, 1.0, 1.0};
+    float posicaoLuz[] = {1.5, 2.0, 2.0, 0.0};
+
+    glLightfv(GL_LIGHT0, GL_POSITION, posicaoLuz);
+
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, luzAmbiente);
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, luzDifusa);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+}
+
+void init(){
+    glEnable(GL_DEPTH_TEST);
+    glShadeModel(GL_SMOOTH);
+    luzes();
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glClearColor(0.5, 0.8, 1.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, 1.0, 1.0, 10.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    criaNuvem();
+    gluLookAt(0.0, 0.0, 3.0,
+              0.0, 0.0, 0.0,
+              0.0, 1.0, 0.0);
+}
+
+int main(int argc, char **argv){
+    setlocale(LC_ALL, "");
+    srand(time(NULL));
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize(600, 600);
+    glutCreateWindow("Jogo do Balao - OpenGL");
+    init();
+    glutDisplayFunc(display);
+    glutSpecialFunc(tecladoEspecial);
+    glutKeyboardFunc(teclado);
+    glutTimerFunc(16, atualiza, 0);
+    glutMainLoop();
+    return 0;
+}
