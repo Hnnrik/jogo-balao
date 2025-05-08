@@ -8,8 +8,7 @@
 #include <windows.h>
 #include <locale.h>
 
-typedef struct
-{
+typedef struct{
     float nuvemX;
     float nuvemY;
     float velocidadeNuvem;
@@ -24,6 +23,7 @@ int quantidadeNuvens = 0;
 nuvem nuvens[MAXIMO_NUVENS];
 bool colisao = false;
 int pontos = 0;
+
 bool jogando = false;
 
 void atualiza(int valor);
@@ -32,11 +32,16 @@ void desenhaBalaoManual();
 void display();
 void desenhaNuvem();
 void criaNuvem();
+int melhor;
 
 
 
 void reseta(){
     if(colisao){
+        if(pontos> melhor){
+            melhor=pontos;
+            salvarNovaMelhorPontuacao("pontuacoes.csv",melhor);
+        }
         colisao=false;
         balaoX=-0.8;
         balaoY = 0.3;
@@ -282,9 +287,6 @@ void desenhaBalaoManual()
     glVertex3f(-0.02, -0.3, -0.02);
     glEnd();
 
-
-
-
     glColor3f(0.4, 0.2, 0.0);
     glTranslatef(0.0, -0.32, 0.0);
     glutSolidCube(0.08);
@@ -294,9 +296,42 @@ void desenhaBalaoManual()
 }
 
 void desenhaMenu() {
+    if (!jogando) {
 
+        char texto1[50];
+        char texto2[50];
+        sprintf(texto1, "Para iniciar comece a se mover", pontos);
+        sprintf(texto2, "A melhor pontuação foi %d");
+
+        glPushMatrix();
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        gluOrtho2D(0, 600, 0, 600);
+
+        glColor3f(0.0, 0.0, 0.0);
+
+        // Primeira linha
+        glRasterPos2i(200, 310);
+        for (char *c = texto1; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24 , *c);
+        }
+
+        // Segunda linha
+        glRasterPos2i(200, 280);  // um pouco abaixo da primeira
+        for (char *c = texto2; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24 , *c);
+        }
+
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+}
+
+void desenhaGameOver() {
     if (colisao) {
-
         char texto1[50];
         char texto2[50];
         sprintf(texto1, "Voce fez %d pontos.", pontos);
@@ -329,6 +364,31 @@ void desenhaMenu() {
     }
 }
 
+void salvarNovaMelhorPontuacao(const char* nomeArquivo, int novaPontuacao) {
+    FILE* arquivo = fopen(nomeArquivo, "w");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo para escrita.\n");
+        return;
+    }
+    fprintf(arquivo, "%d\n", novaPontuacao);  // Escreve a pontuação
+    fclose(arquivo);
+}
+
+
+int obterPrimeiraPontuacao(const char* nomeArquivo) {
+    FILE* arquivo = fopen(nomeArquivo, "r");
+    if (arquivo == NULL) {
+        printf("Erro ao abrir o arquivo.\n");
+        return -1;
+    }
+
+    int pontuacao = 0;
+    fscanf(arquivo, "%d", &pontuacao);
+
+    fclose(arquivo);
+    return pontuacao;
+}
+
 
 void desenhaPontuacao(){
     char texto[20];
@@ -351,6 +411,27 @@ void desenhaPontuacao(){
     glPopMatrix();
 }
 
+void desenhaMelhor(){
+    char texto[20];
+    sprintf(texto, "O melhor foi: %d", melhor);
+
+    glPushMatrix();
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 600, 0, 600);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glRasterPos2i(10, 553);
+    for (char *c = texto; *c != '\0'; c++){
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+    }
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+
 void display(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -362,8 +443,10 @@ void display(){
     desenhaBalaoManual();
     desenhaNuvem();
     desenhaPontuacao();
+    desenhaMelhor();
 
     desenhaMenu();
+    desenhaGameOver();
 
     glutSwapBuffers();
 }
@@ -379,27 +462,25 @@ void teclado(int tecla, int x, int y){
 
 void tecladoEspecial(int tecla, int x, int y){
     if(tecla == GLUT_KEY_UP || tecla == GLUT_KEY_DOWN || tecla == GLUT_KEY_LEFT|| tecla == GLUT_KEY_RIGHT){
-        jogando=true;
         nuvens[0].velocidadeNuvem=velocidadeBaseNuvem;
+        jogando=true;
     }
-    if(jogando){
-        switch (tecla){
-        case GLUT_KEY_UP:
-            balaoY += balaoY < 1.1 ? 0.06 : 0.0;
-            break;
-        case GLUT_KEY_DOWN:
-            balaoY -= balaoY > -0.55 ? 0.06 : 0.0;
-            break;
-        case GLUT_KEY_LEFT:
-            balaoX -= balaoX > -1.1 ? 0.06 : 0.0;
-            break;
-        case GLUT_KEY_RIGHT:
-            balaoX += balaoX < 1.1 ? 0.06 : 0.0;
-            break;
-        }
-        printf("O balão se moveu para (%.2f,%.2f)\n", balaoX, balaoY);
-        glutPostRedisplay();
+    switch (tecla){
+    case GLUT_KEY_UP:
+        balaoY += balaoY < 1.1 ? 0.06 : 0.0;
+        break;
+    case GLUT_KEY_DOWN:
+        balaoY -= balaoY > -0.55 ? 0.06 : 0.0;
+        break;
+    case GLUT_KEY_LEFT:
+        balaoX -= balaoX > -1.1 ? 0.06 : 0.0;
+        break;
+    case GLUT_KEY_RIGHT:
+        balaoX += balaoX < 1.1 ? 0.06 : 0.0;
+        break;
     }
+    printf("O balão se moveu para (%.2f,%.2f)\n", balaoX, balaoY);
+    glutPostRedisplay();
 
 }
 
@@ -422,6 +503,7 @@ void luzes(){
 }
 
 void init(){
+    melhor = obterPrimeiraPontuacao("pontuacoes.csv");
     glEnable(GL_DEPTH_TEST);
     glShadeModel(GL_SMOOTH);
     luzes();
