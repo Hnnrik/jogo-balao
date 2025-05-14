@@ -12,14 +12,36 @@ typedef struct {
     float x, y, z;
 } Vertex;
 
+
 typedef struct {
-    int v1, v2, v3;
+    float u, v, w; // w é opcional — geralmente 0
+} TexCoord;
+
+typedef struct {
+    float x, y, z;
+} Normal;
+
+
+typedef struct {
+    int v[3];  // índices dos vértices
+    int vt[3]; // índices das texturas
+    int vn[3]; // índices das normais
 } Face;
+
 
 Vertex* vertices = NULL;
 Face* faces = NULL;
 int vertex_count = 0;
 int face_count = 0;
+
+TexCoord* texcoords = NULL;
+Normal* normals = NULL;
+
+
+int texcoord_count = 0;
+int normal_count = 0;
+
+
 
 float angle = 0.0;
 
@@ -61,51 +83,66 @@ void carregaImportado(const char* filename) {
         exit(1);
     }
 
-    char line[128];
+    char line[256];
     while (fgets(line, sizeof(line), file)) {
         if (strncmp(line, "v ", 2) == 0) {
             Vertex v;
             sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z);
             vertices = realloc(vertices, sizeof(Vertex) * (vertex_count + 1));
             vertices[vertex_count++] = v;
-        }
-        else if (strncmp(line, "f ", 2) == 0) {
+        } else if (strncmp(line, "vt ", 3) == 0) {
+            TexCoord t;
+            sscanf(line, "vt %f %f", &t.u, &t.v);
+            texcoords = realloc(texcoords, sizeof(TexCoord) * (texcoord_count + 1));
+            texcoords[texcoord_count++] = t;
+        } else if (strncmp(line, "vn ", 3) == 0) {
+            Normal n;
+            sscanf(line, "vn %f %f %f", &n.x, &n.y, &n.z);
+            normals = realloc(normals, sizeof(Normal) * (normal_count + 1));
+            normals[normal_count++] = n;
+        } else if (strncmp(line, "f ", 2) == 0) {
             Face f;
-            int matches = sscanf(line, "f %d %d %d", &f.v1, &f.v2, &f.v3);
-            if (matches != 3) {
-                // Formato com barras: f v1/vt1/vn1 ...
-                sscanf(line, "f %d/%*d/%*d %d/%*d/%*d %d/%*d/%*d", &f.v1, &f.v2, &f.v3);
+            int matches = sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                &f.v[0], &f.vt[0], &f.vn[0],
+                &f.v[1], &f.vt[1], &f.vn[1],
+                &f.v[2], &f.vt[2], &f.vn[2]);
+
+            if (matches == 9) {
+                faces = realloc(faces, sizeof(Face) * (face_count + 1));
+                faces[face_count++] = f;
             }
-            faces = realloc(faces, sizeof(Face) * (face_count + 1));
-            faces[face_count++] = f;
         }
     }
 
     fclose(file);
-    printf("Carregado: %d vértices, %d faces\n", vertex_count, face_count);
+    printf("Carregado: %d vértices, %d texturas, %d normais, %d faces\n",
+           vertex_count, texcoord_count, normal_count, face_count);
 }
 
 void desenhaImportado() {
 
     glPushMatrix();
-
-    glTranslatef(aviaoX, aviaoY, 0.0f);  // Posição na tela
-    glScalef(0.001f, 0.001f, 0.001f);   // Escala razoável
+    glTranslatef(aviaoX, aviaoY, 0.0f);
+    glScalef(0.001f, 0.001f, 0.001f);
     glRotatef(80.0f, -1, 0, 0);
     glRotatef(180.0f, 0, 0, 1);
-    glColor3f(0.8, 0.1, 0.1);           // Cor do avião*/
+    glColor3f(0.8, 0.1, 0.1);
 
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < face_count; i++) {
-        Vertex v1 = vertices[faces[i].v1 - 1];
-        Vertex v2 = vertices[faces[i].v2 - 1];
-        Vertex v3 = vertices[faces[i].v3 - 1];
-        glVertex3f(v1.x, v1.y, v1.z);
-        glVertex3f(v2.x, v2.y, v2.z);
-        glVertex3f(v3.x, v3.y, v3.z);
+        for (int j = 0; j < 3; j++) {
+            Vertex v = vertices[faces[i].v[j] - 1];
+            TexCoord t = texcoords[faces[i].vt[j] - 1];
+            Normal n = normals[faces[i].vn[j] - 1];
+
+            glTexCoord2f(t.u, t.v);       // Coordenada de textura
+            glNormal3f(n.x, n.y, n.z);    // Normal
+            glVertex3f(v.x, v.y, v.z);    // Vértice
+        }
     }
     glEnd();
     glPopMatrix();
+
 }
 
 void reseta(){

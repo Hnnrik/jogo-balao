@@ -38,10 +38,6 @@
 			<Add library="glu32" />
 			<Add directory="C:/msys64/ucrt64/lib" />
 		</Linker>
-		<Unit filename="balao.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="balao.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
